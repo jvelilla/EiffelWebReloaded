@@ -1,4 +1,4 @@
-note
+﻿note
 	description: "Summary description for {JSON_ORDER_CONVERTER}."
 	author: ""
 	date: "$Date$"
@@ -13,7 +13,7 @@ create
 feature -- Initialization
 	make
 		do
-			create object.make ("","")
+			create object.make ("","","")
 		end
 feature	 -- Access
 	 object : ORDER
@@ -22,7 +22,7 @@ feature	 -- Access
 	 value : detachable JSON_OBJECT
 feature -- Conversion
 
-	from_json (j: attached  like value): detachable ANY
+	from_json (j: attached  like value): detachable like object
             -- Convert from JSON value. Returns Void if unable to convert
        local
             lstr1, lstr2, lstr3 : detachable STRING_32
@@ -37,15 +37,10 @@ feature -- Conversion
             is_valid_from_json := True
             lstr1 ?= json.object (j.item (id_key), Void)
             lstr2 ?= json.object (j.item (location_key), Void)
+            lstr3 ?= json.object (j.item (status_key), Void)
             l_val ?= j.item (items_key)
 
-            if lstr1 /= Void and lstr2 /= Void then
-            	create o.make (lstr1, lstr2)
-            elseif lstr1 = Void and lstr2 /= Void then
-            		create o.make ("", lstr2)
-         	else
-            	create o.make ("", "")
-            end
+         	create o.make (lstr1, lstr2, lstr3)
 
 			if l_val /= void then
 				l_array := l_val.array_representation
@@ -93,7 +88,7 @@ feature -- Conversion
         	create Result.make
             Result.put (json.value (o.id), id_key)
             Result.put (json.value (o.location),location_key)
-
+			Result.put (json.value (o.status),status_key)
             from
             	create ja.make_array
             	o.items.start
@@ -121,6 +116,11 @@ feature -- Conversion
 	location_key: JSON_STRING
         once
             create Result.make_json ("location")
+        end
+
+   status_key: JSON_STRING
+        once
+            create Result.make_json ("status")
         end
 
     items_key : JSON_STRING

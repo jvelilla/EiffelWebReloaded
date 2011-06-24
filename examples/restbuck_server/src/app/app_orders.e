@@ -14,6 +14,7 @@ inherit
 	SHARED_DATABASE_API
 	SHARED_EJSON
 	REFACTORING_HELPER
+	SHARED_ORDER_VALIDATION
 create
 	make
 
@@ -205,6 +206,7 @@ feature -- process GET
 			jv : detachable JSON_VALUE
 			l_location, id :  STRING
 			uri : LIST[STRING]
+			http_if_not_match : STRING
 		do
 				fixme ("TODO handle error conditions")
 				if  attached henv.orig_path_info as orig_path then
@@ -219,6 +221,9 @@ feature -- process GET
 							create rep.make (path)
 							rep.headers.put_status (rep.headers.ok)
 							rep.headers.put_content_type_application_json
+							if l_order /= Void then
+								rep.headers.add_header ("Etag: " + l_order.etag)
+							end
 							rep.set_message (j.representation)
 							henv.output.put_string (rep.string)
 							rep.recycle
@@ -266,20 +271,26 @@ feature -- Process PUT
 					l_order := extract_order_request(l_post)
 					fixme ("TODO move to a service method")
 					if  l_order /= Void and then db_access.orders.has_key (l_order.id) then
-						update_order( l_order)
-						create rep.make (path)
-						rep.headers.put_status (rep.headers.ok)
-						rep.headers.put_content_type_application_json
-						if attached henv.http_host as host then
-							l_location := "http://"+host + path + "/" + l_order.id
-							rep.headers.add_header ("Location:"+ l_location)
+						if attached db_access.orders.item (l_order.id) as order then
+							if order_validation.is_valid_transition (order, l_order.status) and then order_validation.is_valid_status_state (order.status) then
+								update_order( l_order)
+								create rep.make (path)
+								rep.headers.put_status (rep.headers.ok)
+								rep.headers.put_content_type_application_json
+								if attached henv.http_host as host then
+									l_location := "http://"+host + path + "/" + l_order.id
+									rep.headers.add_header ("Location:"+ l_location)
+								end
+								jv ?= json.value (l_order)
+								if jv /= Void then
+									rep.set_message (jv.representation)
+								end
+								henv.output.put_string (rep.string)
+								rep.recycle
+							else
+								handle_conflic_request_response(l_post ,henv.output)
+							end
 						end
-						jv ?= json.value (l_order)
-						if jv /= Void then
-							rep.set_message (jv.representation)
-						end
-						henv.output.put_string (rep.string)
-						rep.recycle
 					else
 						handle_bad_request_response(l_post +"%N is not a valid ORDER, maybe the order does not exist in the system",henv.output)
 					end
@@ -370,19 +381,22 @@ feature -- Implementation
 					i := i + 1
 				end
 				an_order.set_id ((db_access.orders.count + i).out)
+				an_order.set_status ("submitted")
+				an_order.add_revision
 				db_access.orders.force (an_order, an_order.id)
 		end
 
 	update_order ( an_order : ORDER)
 		-- update the order to the repository
 		do
-				db_access.orders.force (an_order, an_order.id)
+			an_order.add_revision
+			db_access.orders.force (an_order, an_order.id)
 		end
 
 	delete_order ( an_order : STRING)
 		-- update the order to the repository
 		do
-				db_access.orders.remove (an_order)
+			db_access.orders.remove (an_order)
 		end
 
 	extract_order_request (l_post : STRING) : detachable ORDER
@@ -411,6 +425,18 @@ feature -- Implementation
 		do
 					create rep.make (path)
 					rep.headers.put_status (rep.headers.bad_request)
+					rep.headers.put_content_type_application_json
+					rep.set_message (a_description)
+					an_output.put_string (rep.string)
+					rep.recycle
+		end
+
+	handle_conflic_request_response (a_description:STRING; an_output: HTTPD_SERVER_OUTPUT )
+		local
+			rep: detachable REST_RESPONSE
+		do
+					create rep.make (path)
+					rep.headers.put_status (rep.headers.conflict)
 					rep.headers.put_content_type_application_json
 					rep.set_message (a_description)
 					an_output.put_string (rep.string)

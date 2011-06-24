@@ -1,4 +1,4 @@
-note
+﻿note
 	description: "Summary description for {ITEM}."
 	author: ""
 	date: "$Date$"
@@ -70,6 +70,14 @@ feature -- Element Change
 		ensure
 			quantity_assigned : quantity = a_quantity
 		end
+
+feature -- Report
+	hash_code: INTEGER
+            --Hash code value
+        do
+            Result := option.hash_code + name.hash_code + size.hash_code + quantity.hash_code
+        end
+
 
 invariant
 		valid_size : is_valid_size_option (size)

@@ -9,83 +9,56 @@ class
 create
 	make
 feature -- Initialization
-	make ( an_id : STRING; a_location:STRING)
+
+	make ( an_id : detachable STRING_32; a_location: detachable STRING_32; a_status: detachable STRING_32)
 		do
 			create {ARRAYED_LIST[ITEM]}items.make (10)
-			set_id(an_id)
-			set_location(a_location)
-			status:="submitted"
-		ensure
-			order_created: is_valid_status_states (status)
+			if an_id /= Void then
+				set_id(an_id)
+			else
+				set_id ("")
+			end
+			if a_location /= Void then
+				set_location(a_location)
+			else
+				set_location ("")
+			end
+			if a_status /= Void then
+				set_status (a_status)
+			else
+				set_status ("")
+			end
+			revision := 0
 		end
 
 feature -- Access
- 	id : STRING
- 	location : STRING
+
+ 	id :  STRING_32
+ 	location : STRING_32
  	items: LIST[ITEM]
-	status : STRING
-	
-	is_valid_status_states (a_status: STRING) : BOOLEAN
-		--is `a_status' a valid coffee order state
-		do
-			a_status.to_lower
-			Order_states.compare_objects
-			Result := Order_states.has (a_status)
-		end
-
-	Order_states : ARRAY[STRING]
-		-- List of valid status states
-		once
-			Result := <<"submitted","pay","payed", "cancel","canceled","prepare","prepared","deliver","completed">>
-		end
-
-	is_valid_transition (a_status : STRING) :BOOLEAN
-		-- Given the correr order state, determine if the transition is valid
-		do
-			a_status.to_lower
-			if status.same_string ("submitted") then
-				Result := a_status.same_string ("pay") or  a_status.same_string ("cancel")
-			elseif status.same_string ("pay") then
-				Result := a_status.same_string ("payed")
-			elseif status.same_string ("cancel") then
-				Result := a_status.same_string ("canceled")
-			elseif status.same_string ("payed") then
-				Result := a_status.same_string ("prepared")
-			elseif status.same_string ("prepared") then
-				Result := a_status.same_string ("deliver")
-			elseif status.same_string ("deliver") then
-				Result := a_status.same_string ("completed")
-			end
-		end
-
+	status :  STRING_32
+	revision : INTEGER
 
 feature -- element change
-	set_id (an_id : STRING)
-		require
-		 	valid_id :an_id /= Void
+	set_id (an_id : STRING_32)
 		do
 			id := an_id
 		ensure
 			id_assigned : id.same_string (an_id)
 		end
 
-	set_location (a_location : STRING)
-		require
-			valid_location: a_location /= Void
+	set_location (a_location : STRING_32)
 		do
 			location := a_location
 		ensure
 			location_assigned : location.same_string (a_location)
 		end
 
-	set_status (a_status : STRING)
-		require
-			valid_status: a_status /= Void and then is_valid_status_states (a_status)
-			valid_transition : is_valid_transition (a_status)
+	set_status (a_status : STRING_32)
 		do
 			status := a_status
 		ensure
-			location_assigned : location.same_string (a_status)
+			status_asigned : status.same_string (a_status)
 		end
 
 
@@ -98,7 +71,39 @@ feature -- element change
 			has_item : items.has (a_item)
 		end
 
-invariant
-	order_in_valid_state: is_valid_status_states (status)
+
+	add_revision
+		do
+			revision := revision + 1
+		ensure
+			revision_incremented : old revision + 1 = revision
+		end
+
+feature -- Etag
+
+	etag : STRING_32
+		-- Etag generation for Order objects
+		do
+			Result := hash_code.out + revision.out
+		end
+
+feature -- Report
+
+	hash_code: INTEGER_32
+            -- Hash code value
+        do
+            from
+                items.start
+                Result := items.item.hash_code
+            until
+                items.off
+            loop
+                Result:= ((Result \\ 8388593) |<< 8) + items.item.hash_code
+                items.forth
+            end
+            if items.count > 1  then
+            	Result := Result \\ items.count
+            end
+        end
 
 end
