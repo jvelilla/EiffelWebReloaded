@@ -1,12 +1,12 @@
 note
-	description: "Summary description for {HTTPD_FCGI_APPLICATION}."
+	description: "Summary description for {HTTPD_CGI_APPLICATION}."
 	legal: "See notice at end of class."
 	status: "See notice at end of class."
 	date: "$Date$"
 	revision: "$Revision$"
 
 deferred class
-	HTTPD_FCGI_APPLICATION
+	HTTPD_CGI_APPLICATION
 
 inherit
 	HTTPD_APPLICATION
@@ -15,49 +15,31 @@ feature {NONE} -- Initialization
 
 	initialize
 		do
-			create fcgi.make
-			create {HTTPD_FCGI_SERVER_INPUT} input.make (fcgi)
-			create {HTTPD_FCGI_SERVER_OUTPUT} output.make (fcgi)
+			create {HTTPD_CGI_SERVER_INPUT} input.make
+			create {HTTPD_CGI_SERVER_OUTPUT} output.make
 		end
-
-feature -- Access
-
-	request_count: INTEGER
 
 feature -- Basic operation
 
 	launch
-		local
-			res: INTEGER
 		do
-			from
-				res := fcgi.fcgi_listen
-			until
-				res < 0
-			loop
-				request_count := request_count + 1
-				call_execute (fcgi.updated_environ_variables, input, output)
---				fcgi.fcgi_finish
-				res := fcgi.fcgi_listen
-			end
+			request_count := request_count + 1
+			call_execute ((create {EXECUTION_ENVIRONMENT}).starting_environment_variables, input, output)
 		end
+
+feature {NONE} -- Context
+
+	request_count: INTEGER
 
 feature -- Input/Output
 
 	input: HTTPD_SERVER_INPUT
-			-- Input from client (from httpd server via FCGI)
+			-- Input from client
 
 	output: HTTPD_SERVER_OUTPUT
-			-- Output to client (via httpd server/fcgi)
+			-- Output to client
 
-feature {NONE} -- Implementation
-
-	fcgi: FCGI
-
-invariant
-	fcgi_attached: fcgi /= Void
-
-note
+;note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
 	license: "Eiffel Forum License v2 (see http://www.eiffel.com/licensing/forum.txt)"
 	source: "[

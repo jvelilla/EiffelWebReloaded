@@ -1,14 +1,14 @@
 note
-	description: "Summary description for {REST_SERVER_ENVIRONMENT}."
+	description: "Summary description for {REST_SERVER_REQUEST_CONTEXT}."
 	author: ""
 	date: "$Date$"
 	revision: "$Revision$"
 
 class
-	REST_SERVER_ENVIRONMENT
+	REST_SERVER_REQUEST_CONTEXT
 
 inherit
-	REST_ENVIRONMENT
+	REST_REQUEST_CONTEXT
 		redefine
 			authentication,
 			validate_cookies,
@@ -37,7 +37,7 @@ feature -- Basic operation
 				attached l_cookies.item ("user") as l_user
 			then
 				authenticated := l_auth.value_is_string ("yes")
-				authenticated_login := l_user.value
+				authenticated_identifier := l_user.value
 			end
 		end
 

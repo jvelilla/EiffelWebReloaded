@@ -1,25 +1,17 @@
 note
-	description: "Summary description for {HTTPD_AUTHENTICATION_DATA}."
+	description: "Summary description for {REST_REQUEST_HANDLER_URI_PARAMETER}."
+	author: ""
 	date: "$Date$"
 	revision: "$Revision$"
 
-deferred class
-	HTTPD_AUTHENTICATION_DATA
+class
+	REST_REQUEST_HANDLER_URI_PARAMETER
 
-feature -- Access
+inherit
+	REST_REQUEST_HANDLER_PARAMETER
 
-	authenticated: BOOLEAN
-			-- Authenticated
-		deferred
-		end
-
-	identifier: STRING_32
-			-- Identifier
-		deferred
-		end
-
-invariant
-	authenticated implies identifier.count > 0
+create
+	make
 
 note
 	copyright: "Copyright (c) 1984-2011, Eiffel Software and others"
@@ -31,6 +23,4 @@ note
 			Website http://www.eiffel.com
 			Customer support http://support.eiffel.com
 		]"
-
-end -- class HTTPD_AUTHENTICATION_DATA
-
+end

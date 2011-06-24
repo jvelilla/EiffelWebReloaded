@@ -26,11 +26,18 @@ feature -- Access
 feature -- Access
 
 	http_status: INTEGER
-		--	/* Contains the last HTTP status code returned */
+			--	/* Contains the last HTTP status code returned */
 
 	last_api_call: detachable STRING
-		--	/* Contains the last API call */
+			--	/* Contains the last API call */
 
+feature -- Factory
+
+	new_api_parameters (a_get_capacity, a_post_capacity: INTEGER): REST_SERVICE_API_PARAMETERS
+			-- New REST_SERVICE_API_PARAMETERS for `a_get_capacity, a_post_capacity'
+		do
+			create Result.make (a_get_capacity, a_post_capacity)
+		end
 
 feature -- status report
 
@@ -164,32 +171,60 @@ feature {NONE} -- Implementation
 			-- GET REST API call for `a_api_url'
 			-- credential required
 		do
-			Result := internal_api_call (a_api_url, params, True, False)
+			Result := internal_api_call (a_api_url, params, True, method_get)
 		end
 
 	api_get_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS): like internal_api_call
 			-- GET REST API call for `a_api_url'
 			-- if `a_credentials' provides credentials
 		do
-			Result := internal_api_call (a_api_url, params, False, False)
+			Result := internal_api_call (a_api_url, params, False, method_get)
 		end
 
 	api_post_auth_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS): like internal_api_call
 			-- POST REST API call for `a_api_url'
 			-- credential required
 		do
-			Result := internal_api_call (a_api_url, params, True, True)
+			Result := internal_api_call (a_api_url, params, True, method_post)
 		end
 
 	api_post_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS; a_credentials: BOOLEAN): like internal_api_call
 			-- POST REST API call for `a_api_url'
 			-- if `a_credentials' provides credentials
 		do
-			Result := internal_api_call (a_api_url, params, a_credentials, True)
+			Result := internal_api_call (a_api_url, params, a_credentials, method_post)
 		end
 
-	internal_api_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS; a_require_credentials: BOOLEAN; a_http_post: BOOLEAN): STRING
-			-- REST API call for `a_api_url' with `a_require_credentials' and `a_http_post'
+	api_put_auth_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS): like internal_api_call
+			-- PUT REST API call for `a_api_url'
+			-- credential required
+		do
+			Result := internal_api_call (a_api_url, params, True, method_put)
+		end
+
+	api_put_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS): like internal_api_call
+			-- PUT REST API call for `a_api_url'
+			-- if `a_credentials' provides credentials
+		do
+			Result := internal_api_call (a_api_url, params, False, method_put)
+		end
+
+	api_delete_auth_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS): like internal_api_call
+			-- DELETE REST API call for `a_api_url'
+			-- credential required
+		do
+			Result := internal_api_call (a_api_url, params, True, method_delete)
+		end
+
+	api_delete_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS): like internal_api_call
+			-- DELETE REST API call for `a_api_url'
+			-- if `a_credentials' provides credentials
+		do
+			Result := internal_api_call (a_api_url, params, False, method_delete)
+		end
+
+	internal_api_call (a_api_url: STRING; params: detachable REST_SERVICE_API_PARAMETERS; a_require_credentials: BOOLEAN; a_http_method: INTEGER): STRING
+			-- REST API call for `a_api_url' with `a_require_credentials' and `a_http_method'
 		deferred
 		end
 
@@ -240,6 +275,14 @@ feature -- Access: Encoding
 		end
 
 feature {NONE} -- Constants
+
+	method_get: INTEGER = 1
+
+	method_post: INTEGER = 2
+
+	method_put: INTEGER = 3
+
+	method_delete: INTEGER = 4
 
 	json_id: STRING = "json"
 
